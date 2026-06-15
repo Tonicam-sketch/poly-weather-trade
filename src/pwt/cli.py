@@ -3,14 +3,15 @@
     pwt init-db
     pwt status
     pwt collect-weather  --issue-date 2025-06-01 --horizon 5 [--cities nyc,london]
-    pwt collect-actuals  --start 2025-06-01 --end 2025-06-30 [--cities ...]
+    pwt collect-actuals  --start 2025-06-01 --end 2025-06-30 [--source station] [--cities ...]
     pwt collect-markets  [--open] [--limit 500] [--no-prices]
     pwt backtest         [--lead-days 1] [--inflation 1.0] [--capital 1000]
 
 Collection commands require network access to Open-Meteo and Polymarket. If a
 host is blocked, add it to the environment's egress allowlist:
     ensemble-api.open-meteo.com, historical-forecast-api.open-meteo.com,
-    archive-api.open-meteo.com, gamma-api.polymarket.com, clob.polymarket.com
+    archive-api.open-meteo.com, gamma-api.polymarket.com, clob.polymarket.com,
+    bulk.meteostat.net
 """
 
 from __future__ import annotations
@@ -50,11 +51,18 @@ def cmd_collect_weather(args):
 
 
 def cmd_collect_actuals(args):
-    from pwt.collect.weather import collect_actuals
+    from pwt.collect.weather import collect_actuals, collect_station_actuals
 
+    cities = _cities(args.cities)
     with connect() as db:
-        n = collect_actuals(db, start_date=args.start, end_date=args.end, city_keys=_cities(args.cities))
-    print(f"upserted {n} actuals rows")
+        if args.source in ("era5", "both"):
+            n = collect_actuals(db, start_date=args.start, end_date=args.end, city_keys=cities)
+            print(f"era5: upserted {n} actuals rows")
+        if args.source in ("station", "both"):
+            result = collect_station_actuals(
+                db, start_date=args.start, end_date=args.end, city_keys=cities
+            )
+            print(f"station: upserted {result['rows']} rows; resolved stations: {result['stations']}")
 
 
 def cmd_collect_markets(args):
@@ -100,6 +108,12 @@ def build_parser() -> argparse.ArgumentParser:
     ca.add_argument("--start", required=True, help="YYYY-MM-DD")
     ca.add_argument("--end", required=True, help="YYYY-MM-DD")
     ca.add_argument("--cities", default=None)
+    ca.add_argument(
+        "--source",
+        choices=["era5", "station", "both"],
+        default="both",
+        help="actuals source; 'station' (Meteostat) is resolution truth, era5 is fallback",
+    )
     ca.set_defaults(func=cmd_collect_actuals)
 
     cm = sub.add_parser("collect-markets")

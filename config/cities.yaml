@@ -2,10 +2,15 @@
 #
 # Each city maps a Polymarket weather market to a forecast grid point and an
 # actuals/resolution source. `units` is the unit Polymarket resolves in
-# (US markets resolve in Fahrenheit, most others in Celsius). `station`
-# documents the official resolution station where known — getting this right
-# matters more than the forecast itself, because the contract settles on that
-# exact station, not on the grid point.
+# (US markets resolve in Fahrenheit, most others in Celsius). `station` /
+# `icao` document the official resolution station: getting this right matters
+# more than the forecast itself, because the contract settles on that exact
+# station, not on the grid point.
+#
+# Station resolution for actuals (Meteostat): the collector picks the station by
+# `icao` if it matches, else the nearest station to (lat, lon) — which are set to
+# the resolution station's own coordinates. To pin an exact verified station, set
+# `meteostat_id` (overrides nearest-station matching).
 
 cities:
   nyc:
@@ -15,6 +20,7 @@ cities:
     tz: America/New_York
     units: F
     station: KNYC (Central Park)
+    icao: KNYC
   toronto:
     name: Toronto
     lat: 43.6767
@@ -22,6 +28,7 @@ cities:
     tz: America/Toronto
     units: C
     station: CYYZ (Pearson)
+    icao: CYYZ
   london:
     name: London
     lat: 51.4790
@@ -29,41 +36,47 @@ cities:
     tz: Europe/London
     units: C
     station: EGLL (Heathrow)
+    icao: EGLL
   shanghai:
     name: Shanghai
-    lat: 31.23
-    lon: 121.47
+    lat: 31.1979
+    lon: 121.3363       # Hongqiao (ZSSS)
     tz: Asia/Shanghai
     units: C
     station: ZSSS (Hongqiao)
+    icao: ZSSS
   seoul:
     name: Seoul
-    lat: 37.57
-    lon: 126.98
+    lat: 37.5583
+    lon: 126.7906       # Gimpo (RKSS)
     tz: Asia/Seoul
     units: C
-    station: RKSL (Gimpo)
+    station: RKSS (Gimpo)
+    icao: RKSS
   tokyo:
     name: Tokyo
-    lat: 35.69
-    lon: 139.69
+    lat: 35.6900
+    lon: 139.6900
     tz: Asia/Tokyo
     units: C
     station: Tokyo (JMA)
+    icao: RJTT
   singapore:
     name: Singapore
-    lat: 1.35
-    lon: 103.82
+    lat: 1.3502
+    lon: 103.9944       # Changi (WSSS)
     tz: Asia/Singapore
     units: C
     station: WSSS (Changi)
+    icao: WSSS
   shenzhen:
     name: Shenzhen
-    lat: 22.54
-    lon: 114.06
+    lat: 22.6393
+    lon: 113.8108       # Bao'an (ZGSZ)
     tz: Asia/Shanghai
     units: C
     station: ZGSZ (Bao'an)
+    icao: ZGSZ
 
 # Default ensemble models to pull from Open-Meteo (multi-model improves
 # calibration vs a single model). icon_seamless + ecmwf give independent views.

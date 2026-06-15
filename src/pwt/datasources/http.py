@@ -31,10 +31,13 @@ class HttpClient:
         self.backoff_base = backoff_base
         self.session = session or requests.Session()
 
-    def get_json(self, path: str = "", params: dict | None = None) -> Any:
-        url = f"{self.base_url}{path}" if path.startswith("/") or not self.base_url else f"{self.base_url}/{path}"
+    def _url(self, path: str) -> str:
         if not self.base_url:
-            url = path
+            return path
+        return f"{self.base_url}{path}" if path.startswith("/") else f"{self.base_url}/{path}"
+
+    def _get(self, path: str, params: dict | None) -> requests.Response:
+        url = self._url(path)
         last_err: Exception | None = None
         for attempt in range(self.max_retries):
             try:
@@ -42,10 +45,16 @@ class HttpClient:
                 if resp.status_code == 429 or resp.status_code >= 500:
                     raise HttpError(f"retryable status {resp.status_code} for {url}")
                 resp.raise_for_status()
-                return resp.json()
+                return resp
             except (requests.RequestException, HttpError) as e:
                 last_err = e
                 if attempt == self.max_retries - 1:
                     break
                 time.sleep(self.backoff_base ** attempt)
         raise HttpError(f"GET failed after {self.max_retries} attempts: {url}: {last_err}")
+
+    def get_json(self, path: str = "", params: dict | None = None) -> Any:
+        return self._get(path, params).json()
+
+    def get_bytes(self, path: str = "", params: dict | None = None) -> bytes:
+        return self._get(path, params).content

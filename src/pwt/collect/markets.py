@@ -110,9 +110,15 @@ def collect_markets(
                 n_prices += db.upsert_prices(price_rows)
 
         # Resolution truth from the actuals table (collect actuals first).
+        # Prefer official station observations over the ERA5 reanalysis proxy.
         if city and market_row["target_date"]:
             actual = db.query(
-                "SELECT tmax_c FROM actuals WHERE city = ? AND date = ? ORDER BY source LIMIT 1",
+                """
+                SELECT tmax_c FROM actuals
+                WHERE city = ? AND date = ?
+                ORDER BY CASE source WHEN 'station' THEN 0 WHEN 'era5' THEN 1 ELSE 2 END
+                LIMIT 1
+                """,
                 (city, market_row["target_date"]),
             )
             if actual:

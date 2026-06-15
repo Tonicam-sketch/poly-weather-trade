@@ -24,6 +24,8 @@ class City:
     tz: str
     units: str  # "F" or "C" — the unit the market resolves in
     station: str
+    icao: str | None = None          # resolution station ICAO (hint for matching)
+    meteostat_id: str | None = None  # verified Meteostat station id (override)
 
     @property
     def is_fahrenheit(self) -> bool:
@@ -48,6 +50,8 @@ def load_cities() -> dict[str, City]:
             tz=c["tz"],
             units=c.get("units", "C"),
             station=c.get("station", ""),
+            icao=c.get("icao"),
+            meteostat_id=c.get("meteostat_id"),
         )
         for key, c in raw.items()
     }

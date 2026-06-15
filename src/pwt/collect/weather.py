@@ -9,8 +9,9 @@ from __future__ import annotations
 
 from datetime import date, datetime, timedelta, timezone
 
-from pwt.config import get_city, ensemble_models, load_cities
+from pwt.config import City, get_city, ensemble_models, load_cities
 from pwt.datasources.open_meteo import OpenMeteoClient
+from pwt.datasources.station import MeteostatClient, Station, find_nearest_station
 from pwt.storage.db import Database
 
 
@@ -92,3 +93,56 @@ def collect_actuals(
         ]
         total += db.upsert_actuals(rows)
     return total
+
+
+def resolve_station_id(city: City, stations: list[Station] | None) -> str | None:
+    """Verified id if pinned, else the station matching ICAO / nearest to coords."""
+    if city.meteostat_id:
+        return city.meteostat_id
+    if not stations:
+        return None
+    match = find_nearest_station(stations, city.lat, city.lon, icao=city.icao)
+    return match.id if match else None
+
+
+def collect_station_actuals(
+    db: Database,
+    *,
+    start_date: str,
+    end_date: str,
+    city_keys: list[str] | None = None,
+    client: MeteostatClient | None = None,
+) -> dict:
+    """Pull official station daily Tmax (resolution truth) via Meteostat.
+
+    Stored under source="station", which the resolver prefers over ERA5.
+    """
+    client = client or MeteostatClient()
+    city_keys = city_keys or list(load_cities().keys())
+    fetched = _now_iso()
+
+    # Station metadata is only needed for cities without a pinned meteostat_id.
+    need_meta = any(get_city(k).meteostat_id is None for k in city_keys)
+    stations = client.stations_meta() if need_meta else None
+
+    total = 0
+    resolved: dict[str, str | None] = {}
+    for key in city_keys:
+        city = get_city(key)
+        station_id = resolve_station_id(city, stations)
+        resolved[key] = station_id
+        if not station_id:
+            continue
+        parsed = client.daily_tmax(station_id, start_date=start_date, end_date=end_date)
+        rows = [
+            {
+                "city": key,
+                "date": r["date"],
+                "tmax_c": r["tmax_c"],
+                "source": "station",
+                "fetched_at": fetched,
+            }
+            for r in parsed
+        ]
+        total += db.upsert_actuals(rows)
+    return {"rows": total, "stations": resolved}
