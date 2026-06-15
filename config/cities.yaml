@@ -1,0 +1,73 @@
+# City registry for weather-market backtesting.
+#
+# Each city maps a Polymarket weather market to a forecast grid point and an
+# actuals/resolution source. `units` is the unit Polymarket resolves in
+# (US markets resolve in Fahrenheit, most others in Celsius). `station`
+# documents the official resolution station where known — getting this right
+# matters more than the forecast itself, because the contract settles on that
+# exact station, not on the grid point.
+
+cities:
+  nyc:
+    name: New York City
+    lat: 40.7790
+    lon: -73.9692       # Central Park (KNYC) — common NWS resolution point
+    tz: America/New_York
+    units: F
+    station: KNYC (Central Park)
+  toronto:
+    name: Toronto
+    lat: 43.6767
+    lon: -79.6306       # Toronto Pearson (CYYZ)
+    tz: America/Toronto
+    units: C
+    station: CYYZ (Pearson)
+  london:
+    name: London
+    lat: 51.4790
+    lon: -0.4490        # Heathrow (EGLL)
+    tz: Europe/London
+    units: C
+    station: EGLL (Heathrow)
+  shanghai:
+    name: Shanghai
+    lat: 31.23
+    lon: 121.47
+    tz: Asia/Shanghai
+    units: C
+    station: ZSSS (Hongqiao)
+  seoul:
+    name: Seoul
+    lat: 37.57
+    lon: 126.98
+    tz: Asia/Seoul
+    units: C
+    station: RKSL (Gimpo)
+  tokyo:
+    name: Tokyo
+    lat: 35.69
+    lon: 139.69
+    tz: Asia/Tokyo
+    units: C
+    station: Tokyo (JMA)
+  singapore:
+    name: Singapore
+    lat: 1.35
+    lon: 103.82
+    tz: Asia/Singapore
+    units: C
+    station: WSSS (Changi)
+  shenzhen:
+    name: Shenzhen
+    lat: 22.54
+    lon: 114.06
+    tz: Asia/Shanghai
+    units: C
+    station: ZGSZ (Bao'an)
+
+# Default ensemble models to pull from Open-Meteo (multi-model improves
+# calibration vs a single model). icon_seamless + ecmwf give independent views.
+ensemble_models:
+  - icon_seamless
+  - ecmwf_ifs025
+  - gfs_seamless

@@ -1,0 +1,19 @@
+# Data artifacts (collected raw data + DB) — never commit
+data/
+*.sqlite
+*.sqlite-journal
+*.db
+*.parquet
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.venv/
+venv/
+.mypy_cache/
+
+# Secrets
+.env
+*.creds.json
